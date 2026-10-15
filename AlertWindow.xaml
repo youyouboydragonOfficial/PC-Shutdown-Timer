@@ -8,7 +8,8 @@
         ResizeMode="NoResize"
         WindowStyle="None"
         AllowsTransparency="True"
-        Background="Transparent">
+        Background="Transparent"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown">
     
     <Border Background="#1E293B" 
             BorderBrush="#F59E0B" 
