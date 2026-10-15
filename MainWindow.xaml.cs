@@ -29,11 +29,26 @@ namespace PCShutdownTimer
         public MainWindow()
         {
             InitializeComponent();
+            SetWindowIconSafely();
             InitializeFormElements();
             InitializeNotifyIcon();
 
             Loaded += MainWindow_Loaded;
             Closing += MainWindow_Closing;
+            StateChanged += MainWindow_StateChanged;
+        }
+
+        private void SetWindowIconSafely()
+        {
+            try
+            {
+                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
+                if (File.Exists(iconPath))
+                {
+                    Icon = System.Windows.Media.Imaging.BitmapFrame.Create(new Uri(iconPath, UriKind.Absolute));
+                }
+            }
+            catch { }
         }
 
         private void InitializeFormElements()
@@ -53,7 +68,7 @@ namespace PCShutdownTimer
                 CmbDurationSeconds.Items.Add(i.ToString());
             }
 
-            // Default specific time: Today + 1 hour (rounded to 5 minutes)
+            // Default specific time: Today + 1 hour (rounded to nearest 5 minutes)
             var now = DateTime.Now;
             DpTargetDate.SelectedDate = now.Date;
             var defaultTarget = now.AddHours(1);
@@ -71,21 +86,30 @@ namespace PCShutdownTimer
         {
             _notifyIcon = new Forms.NotifyIcon
             {
-                Text = "PCシャットダウン予約ツール (待機中)",
                 Visible = true
             };
+
+            SetTrayText("PCシャットダウン予約ツール (待機中)");
 
             // Load app icon for notify icon
             try
             {
-                string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
-                if (File.Exists(iconPath))
+                var sri = WpfApplication.GetResourceStream(new Uri("pack://application:,,,/icon.ico"));
+                if (sri?.Stream != null)
                 {
-                    _notifyIcon.Icon = new Icon(iconPath);
+                    _notifyIcon.Icon = new Icon(sri.Stream);
                 }
                 else
                 {
-                    _notifyIcon.Icon = SystemIcons.Application;
+                    string iconPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "icon.ico");
+                    if (File.Exists(iconPath))
+                    {
+                        _notifyIcon.Icon = new Icon(iconPath);
+                    }
+                    else
+                    {
+                        _notifyIcon.Icon = SystemIcons.Application;
+                    }
                 }
             }
             catch
@@ -94,18 +118,38 @@ namespace PCShutdownTimer
             }
 
             var contextMenu = new Forms.ContextMenuStrip();
-            var itemOpen = new Forms.ToolStripMenuItem("表示 (&O)", null, (s, e) => RestoreFromTray());
-            var itemCancel = new Forms.ToolStripMenuItem("予約キャンセル (&C)", null, (s, e) => CancelReservation());
+            var itemOpen = new Forms.ToolStripMenuItem("表示 (&O)", null, (s, e) => Dispatcher.Invoke(RestoreFromTray));
+            var itemCancel = new Forms.ToolStripMenuItem("予約キャンセル (&C)", null, (s, e) => Dispatcher.Invoke(CancelReservation));
             var itemSeparator = new Forms.ToolStripSeparator();
-            var itemExit = new Forms.ToolStripMenuItem("終了 (&X)", null, (s, e) =>
-            {
-                _notifyIcon.Visible = false;
-                WpfApplication.Current.Shutdown();
-            });
+            var itemExit = new Forms.ToolStripMenuItem("終了 (&X)", null, (s, e) => Dispatcher.Invoke(ExitApplication));
 
             contextMenu.Items.AddRange(new Forms.ToolStripItem[] { itemOpen, itemCancel, itemSeparator, itemExit });
             _notifyIcon.ContextMenuStrip = contextMenu;
-            _notifyIcon.DoubleClick += (s, e) => RestoreFromTray();
+            _notifyIcon.DoubleClick += (s, e) => Dispatcher.Invoke(RestoreFromTray);
+        }
+
+        private void SetTrayText(string text)
+        {
+            if (_notifyIcon == null) return;
+            try
+            {
+                if (text.Length > 63)
+                {
+                    text = text.Substring(0, 60) + "...";
+                }
+                _notifyIcon.Text = text;
+            }
+            catch { }
+        }
+
+        private void ShowTrayBalloon(string title, string message, Forms.ToolTipIcon icon)
+        {
+            if (_notifyIcon == null) return;
+            try
+            {
+                _notifyIcon.ShowBalloonTip(3000, title, message, icon);
+            }
+            catch { }
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
@@ -117,12 +161,20 @@ namespace PCShutdownTimer
             _timer.Tick += Timer_Tick;
         }
 
+        private void MainWindow_StateChanged(object? sender, EventArgs e)
+        {
+            if (WindowState == WindowState.Minimized && _isReserved)
+            {
+                HideToTray();
+            }
+        }
+
         private void MainWindow_Closing(object? sender, System.ComponentModel.CancelEventArgs e)
         {
             if (_isReserved)
             {
                 var result = WpfMessageBox.Show(
-                    "シャットダウンの予約が実行中です。\nタスクトレイに最小化して予約を継続しますか？\n（[いいえ] を選ぶと予約を破棄してアプリを完全に終了します）",
+                    "シャットダウンの予約が実行中です。\n\n[はい]: タスクトレイに最小化して予約を継続\n[いいえ]: 予約をキャンセルしてアプリを終了\n[キャンセル]: アプリ終了を取り消す",
                     "予約実行中の終了確認",
                     MessageBoxButton.YesNoCancel,
                     MessageBoxImage.Question);
@@ -140,20 +192,51 @@ namespace PCShutdownTimer
                 }
             }
 
+            CleanUpAndExit();
+        }
+
+        private void ExitApplication()
+        {
+            if (_isReserved)
+            {
+                var result = WpfMessageBox.Show(
+                    "予約が実行中です。予約を破棄してアプリを終了しますか？",
+                    "終了の確認",
+                    MessageBoxButton.YesNo,
+                    MessageBoxImage.Question);
+
+                if (result != MessageBoxResult.Yes) return;
+            }
+
+            CleanUpAndExit();
+            WpfApplication.Current.Shutdown();
+        }
+
+        private void CleanUpAndExit()
+        {
+            _timer?.Stop();
+            if (_activeAlertWindow != null)
+            {
+                try { _activeAlertWindow.Close(); } catch { }
+                _activeAlertWindow = null;
+            }
+
             if (_notifyIcon != null)
             {
-                _notifyIcon.Visible = false;
-                _notifyIcon.Dispose();
+                try
+                {
+                    _notifyIcon.Visible = false;
+                    _notifyIcon.Dispose();
+                }
+                catch { }
+                _notifyIcon = null;
             }
         }
 
         private void HideToTray()
         {
             Hide();
-            if (_notifyIcon != null)
-            {
-                _notifyIcon.ShowBalloonTip(3000, "PCシャットダウン予約ツール", "バックグラウンドで予約を監視中です。ダブルクリックで再表示できます。", Forms.ToolTipIcon.Info);
-            }
+            ShowTrayBalloon("PCシャットダウン予約ツール", "バックグラウンドで予約を監視中です。通知領域のアイコンからいつでも開けます。", Forms.ToolTipIcon.Info);
         }
 
         private void RestoreFromTray()
@@ -313,7 +396,6 @@ namespace PCShutdownTimer
                 _noticeTime = _targetTime.Subtract(TimeSpan.FromMinutes(noticeMinutes));
                 if (_noticeTime <= now)
                 {
-                    // Notice time is already past or too soon
                     _noticeShown = true;
                     TxtNoticeTimeInfo.Text = "時間が近いため即時警告 (通知済み)";
                 }
@@ -348,11 +430,8 @@ namespace PCShutdownTimer
             _timer?.Start();
             UpdateTimerDisplay();
 
-            if (_notifyIcon != null)
-            {
-                _notifyIcon.Text = $"予約中: {_targetTime:HH:mm} に{actionName}";
-                _notifyIcon.ShowBalloonTip(3000, "シャットダウン予約完了", $"{_targetTime:yyyy/MM/dd HH:mm:ss} に【{actionName}】が実行されます。", Forms.ToolTipIcon.Info);
-            }
+            SetTrayText($"予約中: {_targetTime:HH:mm} に{actionName}");
+            ShowTrayBalloon("シャットダウン予約完了", $"{_targetTime:yyyy/MM/dd HH:mm:ss} に【{actionName}】が実行されます。", Forms.ToolTipIcon.Info);
         }
 
         private void CancelReservation()
@@ -364,7 +443,7 @@ namespace PCShutdownTimer
 
             if (_activeAlertWindow != null)
             {
-                _activeAlertWindow.Close();
+                try { _activeAlertWindow.Close(); } catch { }
                 _activeAlertWindow = null;
             }
 
@@ -382,11 +461,8 @@ namespace PCShutdownTimer
 
             SetInputsEnabled(true);
 
-            if (_notifyIcon != null)
-            {
-                _notifyIcon.Text = "PCシャットダウン予約ツール (待機中)";
-                _notifyIcon.ShowBalloonTip(2000, "予約キャンセル", "シャットダウン予約をキャンセルしました。", Forms.ToolTipIcon.Warning);
-            }
+            SetTrayText("PCシャットダウン予約ツール (待機中)");
+            ShowTrayBalloon("予約キャンセル", "シャットダウン予約をキャンセルしました。", Forms.ToolTipIcon.Warning);
         }
 
         private void SetInputsEnabled(bool enabled)
@@ -451,11 +527,8 @@ namespace PCShutdownTimer
                 PbCountdown.Value = progress;
             }
 
-            if (_notifyIcon != null)
-            {
-                string actionName = GetSelectedActionName();
-                _notifyIcon.Text = $"{actionName}まで 残り {(int)remaining.TotalHours}時間{remaining.Minutes}分{remaining.Seconds}秒";
-            }
+            string actionName = GetSelectedActionName();
+            SetTrayText($"{actionName} 残り {(int)remaining.TotalHours:D2}:{remaining.Minutes:D2}:{remaining.Seconds:D2}");
         }
 
         private void ShowAdvanceNotice()
@@ -467,8 +540,11 @@ namespace PCShutdownTimer
                 onExtend: () =>
                 {
                     _targetTime = _targetTime.AddMinutes(10);
-                    _noticeShown = false; // allow next notice or extend
+                    int noticeMinutes = GetNoticeMinutes();
+                    _noticeTime = _targetTime.Subtract(TimeSpan.FromMinutes(noticeMinutes));
+                    _noticeShown = (_noticeTime <= DateTime.Now);
                     TxtTargetTimeInfo.Text = $"{_targetTime:yyyy/MM/dd HH:mm:ss} (+10分延長)";
+                    TxtNoticeTimeInfo.Text = _noticeShown ? "延長済み" : $"{_noticeTime:HH:mm:ss} ({noticeMinutes}分前)";
                     UpdateTimerDisplay();
                 },
                 onCancel: () =>
@@ -492,13 +568,13 @@ namespace PCShutdownTimer
                 {
                     // Shutdown
                     string args = force ? "/s /f /t 0" : "/s /t 0";
-                    Process.Start("shutdown.exe", args);
+                    RunSystemCommand("shutdown.exe", args);
                 }
                 else if (RbRestart.IsChecked == true)
                 {
                     // Restart
                     string args = force ? "/r /f /t 0" : "/r /t 0";
-                    Process.Start("shutdown.exe", args);
+                    RunSystemCommand("shutdown.exe", args);
                 }
                 else if (RbSleep.IsChecked == true)
                 {
@@ -509,7 +585,7 @@ namespace PCShutdownTimer
                 {
                     // Sign out
                     string args = force ? "/l /f" : "/l";
-                    Process.Start("shutdown.exe", args);
+                    RunSystemCommand("shutdown.exe", args);
                 }
             }
             catch (Exception ex)
@@ -518,6 +594,18 @@ namespace PCShutdownTimer
             }
 
             CancelReservation();
+        }
+
+        private void RunSystemCommand(string fileName, string args)
+        {
+            var psi = new ProcessStartInfo
+            {
+                FileName = fileName,
+                Arguments = args,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            Process.Start(psi);
         }
 
         private string GetSelectedActionName()
