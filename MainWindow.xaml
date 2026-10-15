@@ -1,0 +1,347 @@
+<Window x:Class="PCShutdownTimer.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="PCシャットダウン予約ツール - © youyoubodragon"
+        Height="780" Width="680"
+        MinHeight="720" MinWidth="640"
+        WindowStartupLocation="CenterScreen"
+        Background="#0F172A"
+        Foreground="#F8FAFC"
+        FontFamily="Segoe UI, Meiryo, sans-serif"
+        Icon="icon.ico">
+
+    <Window.Resources>
+        <!-- Modern Card Style -->
+        <Style x:Key="CardBorder" TargetType="Border">
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="16"/>
+            <Setter Property="Margin" Value="0,0,0,14"/>
+        </Style>
+
+        <!-- Modern Action Radio Button -->
+        <Style x:Key="ActionRadio" TargetType="RadioButton">
+            <Setter Property="Foreground" Value="#E2E8F0"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Margin" Value="0,0,16,0"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+
+        <!-- Preset Button Style -->
+        <Style x:Key="PresetBtn" TargetType="Button">
+            <Setter Property="Background" Value="#334155"/>
+            <Setter Property="Foreground" Value="#CBD5E1"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="Medium"/>
+            <Setter Property="Height" Value="28"/>
+            <Setter Property="Padding" Value="10,2"/>
+            <Setter Property="Margin" Value="0,0,8,6"/>
+            <Setter Property="BorderBrush" Value="#475569"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#475569"/>
+                    <Setter Property="Foreground" Value="#FFFFFF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Modern ComboBox Style -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Background" Value="#0F172A"/>
+            <Setter Property="Foreground" Value="#F8FAFC"/>
+            <Setter Property="BorderBrush" Value="#475569"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="VerticalContentAlignment" Value="Center"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Header -->
+            <RowDefinition Height="*"/>    <!-- Main Content -->
+            <RowDefinition Height="Auto"/> <!-- Footer -->
+        </Grid.RowDefinitions>
+
+        <!-- ==================== HEADER ==================== -->
+        <Grid Grid.Row="0" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="⏱" FontSize="26" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="PCシャットダウン予約ツール" FontSize="22" FontWeight="Bold" Foreground="#F8FAFC" VerticalAlignment="Center"/>
+                </StackPanel>
+                <TextBlock Text="指定時刻やタイマーで自動シャットダウン・再起動を安全に予約実行" FontSize="12" Foreground="#94A3B8" Margin="36,2,0,0"/>
+            </StackPanel>
+
+            <!-- Status Indicator Badge -->
+            <Border Grid.Column="1" x:Name="StatusBadge" Background="#064E3B" BorderBrush="#059669" BorderThickness="1" CornerRadius="16" Padding="12,6" VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal">
+                    <Ellipse x:Name="StatusDot" Width="10" Height="10" Fill="#10B981" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="StatusText" Text="待機中 (未予約)" FontSize="12" FontWeight="Bold" Foreground="#6EE7B7" VerticalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ==================== MAIN CONTENT ==================== -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0,0,0,10">
+            <StackPanel>
+
+                <!-- CARD 1: 実行動作の選択 -->
+                <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="1. 実行する動作を選択" FontSize="14" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,0,12"/>
+                        <WrapPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <RadioButton x:Name="RbShutdown" Style="{StaticResource ActionRadio}" Content="⏻ シャットダウン" IsChecked="True"/>
+                            <RadioButton x:Name="RbRestart" Style="{StaticResource ActionRadio}" Content="🔄 再起動"/>
+                            <RadioButton x:Name="RbSleep" Style="{StaticResource ActionRadio}" Content="🌙 スリープ"/>
+                            <RadioButton x:Name="RbSignOut" Style="{StaticResource ActionRadio}" Content="🚪 サインアウト"/>
+                        </WrapPanel>
+                        <CheckBox x:Name="ChkForce" Content="アプリケーションを強制終了する (/f: 未保存データの確認をスキップ)" Foreground="#CBD5E1" FontSize="12" Margin="4,4,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- CARD 2: 予約時刻・タイマー設定 -->
+                <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="2. 予約方式の設定" FontSize="14" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,0,12"/>
+
+                        <!-- Mode Switch Radios -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,14">
+                            <RadioButton x:Name="RbModeSpecificTime" Style="{StaticResource ActionRadio}" Content="📅 指定時刻で予約" IsChecked="True" Checked="Mode_Changed"/>
+                            <RadioButton x:Name="RbModeCountdown" Style="{StaticResource ActionRadio}" Content="⏳ カウントダウンタイマーで予約" Checked="Mode_Changed"/>
+                        </StackPanel>
+
+                        <!-- Panel A: 指定時刻 -->
+                        <StackPanel x:Name="PanelSpecificTime" Visibility="Visible">
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <DatePicker Grid.Column="0" x:Name="DpTargetDate" Height="34" VerticalContentAlignment="Center"/>
+                                <ComboBox Grid.Column="2" x:Name="CmbTargetHour" Height="34"/>
+                                <TextBlock Grid.Column="3" Text="時" Foreground="#94A3B8" FontSize="14" VerticalAlignment="Center" Margin="6,0,10,0"/>
+                                <ComboBox Grid.Column="4" x:Name="CmbTargetMinute" Height="34"/>
+                                <TextBlock Grid.Column="5" Text="分" Foreground="#94A3B8" FontSize="14" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                            </Grid>
+
+                            <!-- Quick Presets -->
+                            <TextBlock Text="クイック設定:" FontSize="11" Foreground="#94A3B8" Margin="0,4,0,6"/>
+                            <WrapPanel Orientation="Horizontal">
+                                <Button Content="+30分後" Style="{StaticResource PresetBtn}" Click="Preset_AddMinutes_30"/>
+                                <Button Content="+1時間後" Style="{StaticResource PresetBtn}" Click="Preset_AddHours_1"/>
+                                <Button Content="+2時間後" Style="{StaticResource PresetBtn}" Click="Preset_AddHours_2"/>
+                                <Button Content="今日の 23:00" Style="{StaticResource PresetBtn}" Click="Preset_Today_2300"/>
+                                <Button Content="明日の 00:00" Style="{StaticResource PresetBtn}" Click="Preset_Tomorrow_0000"/>
+                                <Button Content="明日の 02:00" Style="{StaticResource PresetBtn}" Click="Preset_Tomorrow_0200"/>
+                            </WrapPanel>
+                        </StackPanel>
+
+                        <!-- Panel B: カウントダウン -->
+                        <StackPanel x:Name="PanelCountdown" Visibility="Collapsed">
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="80"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+
+                                <ComboBox Grid.Column="0" x:Name="CmbDurationHours" Height="34"/>
+                                <TextBlock Grid.Column="1" Text="時間" Foreground="#94A3B8" FontSize="14" VerticalAlignment="Center" Margin="6,0,12,0"/>
+                                <ComboBox Grid.Column="2" x:Name="CmbDurationMinutes" Height="34"/>
+                                <TextBlock Grid.Column="3" Text="分" Foreground="#94A3B8" FontSize="14" VerticalAlignment="Center" Margin="6,0,12,0"/>
+                                <ComboBox Grid.Column="4" x:Name="CmbDurationSeconds" Height="34"/>
+                                <TextBlock Grid.Column="5" Text="秒 後に実行" Foreground="#94A3B8" FontSize="14" VerticalAlignment="Center" Margin="6,0,0,0"/>
+                            </Grid>
+
+                            <!-- Quick Presets -->
+                            <TextBlock Text="クイック設定:" FontSize="11" Foreground="#94A3B8" Margin="0,4,0,6"/>
+                            <WrapPanel Orientation="Horizontal">
+                                <Button Content="15分" Style="{StaticResource PresetBtn}" Click="Preset_Cd_15"/>
+                                <Button Content="30分" Style="{StaticResource PresetBtn}" Click="Preset_Cd_30"/>
+                                <Button Content="45分" Style="{StaticResource PresetBtn}" Click="Preset_Cd_45"/>
+                                <Button Content="1時間" Style="{StaticResource PresetBtn}" Click="Preset_Cd_60"/>
+                                <Button Content="1時間30分" Style="{StaticResource PresetBtn}" Click="Preset_Cd_90"/>
+                                <Button Content="2時間" Style="{StaticResource PresetBtn}" Click="Preset_Cd_120"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                <!-- CARD 3: 事前通知機能 (重要要件) -->
+                <Border Style="{StaticResource CardBorder}">
+                    <StackPanel>
+                        <TextBlock Text="3. 事前通知機能" FontSize="14" FontWeight="Bold" Foreground="#38BDF8" Margin="0,0,0,12"/>
+                        <CheckBox x:Name="ChkAdvanceNotice" Content="実行前に事前通知して警告画面を表示する (推奨)" IsChecked="True" Foreground="#F1F5F9" FontSize="13" FontWeight="SemiBold" Checked="ChkAdvanceNotice_Changed" Unchecked="ChkAdvanceNotice_Changed"/>
+                        
+                        <Grid Margin="24,10,0,6">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="140"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="通知タイミング: " Foreground="#CBD5E1" FontSize="13" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <ComboBox Grid.Column="1" x:Name="CmbNoticeMinutes" Height="32">
+                                <ComboBoxItem Content="1分前"/>
+                                <ComboBoxItem Content="3分前"/>
+                                <ComboBoxItem Content="5分前 (既定)" IsSelected="True"/>
+                                <ComboBoxItem Content="10分前"/>
+                                <ComboBoxItem Content="15分前"/>
+                                <ComboBoxItem Content="30分前"/>
+                            </ComboBox>
+                            <Button Grid.Column="3" Content="🔔 通知テスト表示" Style="{StaticResource PresetBtn}" Height="30" Margin="0" Click="BtnTestNotification_Click"/>
+                        </Grid>
+
+                        <TextBlock Text="※ 事前通知画面では、警告音とともに「10分延長」や「予約キャンセル」をワンクリックで行えます。" FontSize="11" Foreground="#94A3B8" Margin="24,2,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- CARD 4: 予約ステータス＆リアルタイムカウントダウン -->
+                <Border x:Name="CardActiveStatus" Background="#111827" BorderBrush="#0284C7" BorderThickness="2" CornerRadius="12" Padding="18" Margin="0,0,0,14" Visibility="Collapsed">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="⚡ 予約実行ステータス" FontSize="14" FontWeight="Bold" Foreground="#38BDF8"/>
+                            <TextBlock Grid.Column="1" x:Name="TxtActiveActionTitle" Text="シャットダウン" FontSize="13" FontWeight="Bold" Foreground="#FDE047"/>
+                        </Grid>
+
+                        <!-- Large Digital Countdown -->
+                        <Border Background="#030712" CornerRadius="10" Padding="14,10" Margin="0,0,0,12" BorderBrush="#1E293B" BorderThickness="1">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="残り時間" FontSize="12" Foreground="#94A3B8" HorizontalAlignment="Center" Margin="0,0,0,2"/>
+                                <TextBlock x:Name="TxtCountdownDisplay" Text="01:29:45" FontSize="42" FontWeight="Bold" Foreground="#38BDF8" HorizontalAlignment="Center" FontFamily="Consolas, Segoe UI, Courier New"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Smooth Progress Bar -->
+                        <ProgressBar x:Name="PbCountdown" Height="10" Background="#1E293B" Foreground="#38BDF8" BorderThickness="0" Margin="0,0,0,10">
+                            <ProgressBar.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </ProgressBar.Resources>
+                        </ProgressBar>
+
+                        <!-- Details Grid -->
+                        <Grid Margin="4,0,4,0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="実行予定日時: " Foreground="#94A3B8" FontSize="12"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" x:Name="TxtTargetTimeInfo" Text="2026/10/15 22:30:00" Foreground="#F8FAFC" FontSize="12" FontWeight="SemiBold"/>
+
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="事前通知予定: " Foreground="#94A3B8" FontSize="12" Margin="0,4,0,0"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" x:Name="TxtNoticeTimeInfo" Text="22:25:00 (5分前)" Foreground="#F8FAFC" FontSize="12" FontWeight="SemiBold" Margin="0,4,0,0"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- CARD 5: 操作ボタン -->
+                <Grid Margin="0,4,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Main Action Button -->
+                    <Button Grid.Column="0" x:Name="BtnMainAction" Height="52" 
+                            Background="#0284C7" Foreground="#FFFFFF" 
+                            FontSize="16" FontWeight="Bold" 
+                            BorderThickness="0" Cursor="Hand"
+                            Click="BtnMainAction_Click">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="10"/>
+                            </Style>
+                        </Button.Resources>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock x:Name="TxtMainActionIcon" Text="⏻" FontSize="18" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock x:Name="TxtMainActionLabel" Text="予約を開始する" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Minimize to Tray Button -->
+                    <Button Grid.Column="2" x:Name="BtnMinimizeTray" Width="160" Height="52"
+                            Background="#334155" Foreground="#F8FAFC"
+                            FontSize="13" FontWeight="SemiBold"
+                            BorderBrush="#475569" BorderThickness="1" Cursor="Hand"
+                            Click="BtnMinimizeTray_Click">
+                        <Button.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="10"/>
+                            </Style>
+                        </Button.Resources>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                            <TextBlock Text="📥" FontSize="14" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="トレイに格納" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- ==================== FOOTER ==================== -->
+        <Border Grid.Row="2" BorderBrush="#334155" BorderThickness="0,1,0,0" Padding="0,10,0,0">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="PC Shutdown Timer v1.0.0" FontSize="11" Foreground="#64748B" Margin="0,0,16,0"/>
+                    <!-- REQUIRED COPYRIGHT: © youyoubodragon -->
+                    <TextBlock Text="© youyoubodragon" FontSize="11" FontWeight="Bold" Foreground="#38BDF8"/>
+                </StackPanel>
+
+                <Button Grid.Column="1" Content="ℹ バージョン情報" Background="Transparent" Foreground="#94A3B8" FontSize="11" BorderThickness="0" Cursor="Hand" Click="BtnAbout_Click"/>
+            </Grid>
+        </Border>
+
+    </Grid>
+</Window>
