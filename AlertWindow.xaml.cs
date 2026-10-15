@@ -80,6 +80,18 @@ namespace PCShutdownTimer
             Close();
         }
 
+        private void Window_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (e.ButtonState == System.Windows.Input.MouseButtonState.Pressed)
+            {
+                try
+                {
+                    DragMove();
+                }
+                catch { }
+            }
+        }
+
         protected override void OnClosed(EventArgs e)
         {
             _updateTimer.Stop();
