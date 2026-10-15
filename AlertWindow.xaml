@@ -1,0 +1,112 @@
+<Window x:Class="PCShutdownTimer.AlertWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="シャットダウン事前警告 - PCシャットダウン予約ツール"
+        Height="360" Width="520"
+        WindowStartupLocation="CenterScreen"
+        Topmost="True"
+        ResizeMode="NoResize"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent">
+    
+    <Border Background="#1E293B" 
+            BorderBrush="#F59E0B" 
+            BorderThickness="2" 
+            CornerRadius="16">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="25" ShadowDepth="0" Color="#F59E0B" Opacity="0.45"/>
+        </Border.Effect>
+        <Grid Margin="24">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Header -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,16">
+                <TextBlock Text="⚠️" FontSize="36" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="シャットダウン事前警告" FontSize="20" FontWeight="Bold" Foreground="#F8FAFC"/>
+                    <TextBlock Text="PCシャットダウン予約ツール" FontSize="12" Foreground="#94A3B8"/>
+                </StackPanel>
+            </StackPanel>
+
+            <!-- Message Area -->
+            <Border Grid.Row="1" Background="#0F172A" CornerRadius="12" Padding="16" Margin="0,0,0,20">
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="TxtMessage" 
+                               Text="まもなく指定時刻になり、シャットダウンが実行されます。" 
+                               FontSize="15" 
+                               FontWeight="SemiBold" 
+                               Foreground="#FDE68A" 
+                               TextAlignment="Center" 
+                               TextWrapping="Wrap" 
+                               Margin="0,0,0,10"/>
+                    <TextBlock x:Name="TxtRemaining" 
+                               Text="実行まで あと 5分 00秒" 
+                               FontSize="22" 
+                               FontWeight="Bold" 
+                               Foreground="#38BDF8" 
+                               TextAlignment="Center" 
+                               Margin="0,0,0,10"/>
+                    <TextBlock Text="※未保存のデータがある場合は、速やかにファイルを保存してください。" 
+                               FontSize="12" 
+                               Foreground="#CBD5E1" 
+                               TextAlignment="Center" 
+                               TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Action Buttons -->
+            <Grid Grid.Row="2" Margin="0,0,0,12">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="10"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Button Grid.Column="0" Content="10分延長" Height="40" 
+                        Background="#334155" Foreground="#F8FAFC" FontSize="13" FontWeight="SemiBold"
+                        BorderBrush="#475569" BorderThickness="1" Cursor="Hand"
+                        Click="BtnExtend_Click">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="8"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+
+                <Button Grid.Column="2" Content="予約キャンセル" Height="40" 
+                        Background="#EF4444" Foreground="#FFFFFF" FontSize="13" FontWeight="Bold"
+                        BorderThickness="0" Cursor="Hand"
+                        Click="BtnCancel_Click">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="8"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+
+                <Button Grid.Column="4" Content="確認 (閉じる)" Height="40" 
+                        Background="#10B981" Foreground="#FFFFFF" FontSize="13" FontWeight="Bold"
+                        BorderThickness="0" Cursor="Hand"
+                        Click="BtnDismiss_Click">
+                    <Button.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="8"/>
+                        </Style>
+                    </Button.Resources>
+                </Button>
+            </Grid>
+
+            <!-- Copyright footer -->
+            <TextBlock Grid.Row="3" Text="© youyoubodragon" 
+                       HorizontalAlignment="Center" FontSize="11" Foreground="#64748B"/>
+        </Grid>
+    </Border>
+</Window>
